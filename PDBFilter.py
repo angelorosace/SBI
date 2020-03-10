@@ -12,28 +12,26 @@ class PDBFilter:
     ----------
     parser : None
         A variable to store an instance of the PDBParser Object
-    struct : List
-        A list used to store the structure objects of the different proteins in the input.
+    struct : Structure
+        A variable used to store the structure object of the protein complex passed as input.
     residue_map : dict
         A dictionary used for mapping residues names (keys) to their one-letter name (values).
     pdb_seq_dict : dict
-        A dictionary used to store the chains (keys) of the input pdb files and their sequences (values).
+        A dictionary used to store the chains (keys) of the input pdb file and its sequences (values).
     pdb_atom_dict: dict
-        A dictionary used to store the chains (keys) of the input pdb files and their atoms (values).
+        A dictionary used to store the chains (keys) of the input pdb file and it atoms (values).
 
     Methods
 
     -------
-    build_structures(pdb_list=List)
-        Extracts protein structures from the pdb files in the pbd_list.
     get_pdb_name_from_path(path=str)
         Extracts pbd name from file path
     get_seq_data(structures=List)
-        Populates the pdb_seq_dict with data for the chains of the structures and their sequences.
+        Populates the pdb_seq_dict with data for the chains of the structure and its sequences.
     get_atom_data(structures=List)
-        Populates the pdb_atom_dict with data for the chains of the structures and their atoms.
+        Populates the pdb_atom_dict with data for the chains of the structure and its atoms.
      write_pairings_files(pdb_list)
-        Writes files containing the atoms for all the pairs of chains for each protein in the input list
+        Writes files containing the atoms for all the pairs of chains for the protein passed as input
     pair_chain(pdb=str)
         Pairs up all the different chains within the same protein and writes a file for each pair.
         The file contains the atoms for the two chains in the pair.
@@ -44,7 +42,7 @@ class PDBFilter:
         Formats the data and writes it in the output interaction files.
     """
     parser = None
-    structs = []
+    struct = None
     residue_map = {
         "ALA": "A",
         "CYS": "C",
@@ -70,17 +68,11 @@ class PDBFilter:
     pdb_seq_dict = {}
     pdb_atom_dict = {}
 
-    def __init__(self, pdb_list):
+    def __init__(self, pdb):
         self.parser = PDBParser(QUIET=1)
-        structs = self.build_structures(pdb_list)
-        self.get_seq_data(structs)
-        self.get_atom_data(structs)
-
-    def build_structures(self, pdb_list):
-        structures = []
-        for i, pdb in enumerate(pdb_list):
-            structures.append(self.parser.get_structure(self.get_pdb_name_from_path(pdb), pdb))
-        return structures
+        struct = self.parser.get_structure(self.get_pdb_name_from_path(pdb), pdb)
+        self.get_seq_data(struct)
+        self.get_atom_data(struct)
 
     @staticmethod
     def get_pdb_name_from_path(path):
@@ -89,36 +81,33 @@ class PDBFilter:
         name = tmp_name.split(".")
         return name[0]
 
-    def get_seq_data(self, structures):
-        for i, structure in enumerate(structures):
-            tmp_dict = {}
-            for model in structure:
-                for chain in model:
-                    seq = ""
-                    for residue in chain:
-                        if residue.get_resname() in self.residue_map.keys():
-                            seq += self.residue_map[residue.get_resname()]
-                        tmp_dict[chain.get_id()] = seq
-            self.pdb_seq_dict[structure.get_id()] = tmp_dict
+    def get_seq_data(self, structure):
+        tmp_dict = {}
+        for model in structure:
+            for chain in model:
+                seq = ""
+                for residue in chain:
+                    if residue.get_resname() in self.residue_map.keys():
+                        seq += self.residue_map[residue.get_resname()]
+                    tmp_dict[chain.get_id()] = seq
+        self.pdb_seq_dict[structure.get_id()] = tmp_dict
 
-    def get_atom_data(self, structures):
-        for i, structure in enumerate(structures):
-            tmp_dict = {}
-            for model in structure:
-                j = 0
-                for k, chain in enumerate(model):
-                    atoms = []
-                    for i, residue in enumerate(chain):
-                        for atom in residue:
-                            coords = atom.get_coord()
-                            j += 1
-                            atoms.append(["ATOM", j, atom.get_name(), atom.get_parent().get_resname(), chain.get_id(), i, coords[0], coords[1], coords[2], atom.get_occupancy(), atom.get_bfactor()])
-                    tmp_dict[k] = atoms
-            self.pdb_atom_dict[structure.get_id()] = tmp_dict
+    def get_atom_data(self, structure):
+        tmp_dict = {}
+        for model in structure:
+            j = 0
+            for k, chain in enumerate(model):
+                atoms = []
+                for i, residue in enumerate(chain):
+                    for atom in residue:
+                        coords = atom.get_coord()
+                        j += 1
+                        atoms.append(["ATOM", j, atom.get_name(), atom.get_parent().get_resname(), chain.get_id(), i, coords[0], coords[1], coords[2], atom.get_occupancy(), atom.get_bfactor()])
+                tmp_dict[k] = atoms
+        self.pdb_atom_dict[structure.get_id()] = tmp_dict
 
-    def write_pairings_files(self, pdb_names):
-        for pdb_name in pdb_names:
-            self.pair_chain(pdb_name)
+    def write_pairings_files(self, pdb_name):
+        self.pair_chain(pdb_name)
 
     def pair_chain(self, pdb):
         for i, chain in enumerate(self.pdb_atom_dict[pdb]):
