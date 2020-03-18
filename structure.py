@@ -73,7 +73,16 @@ def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms
 
 #     return sequence
 
-def recursively_add_chains_to_structure(structure, chains):
+
+
+
+# TODO
+#   Figure out structure of stoichiometry
+#   Loop through every current chain in structure to see if adding this chain is valid
+def is_compatible_with_stoichiometry(structure, chain, stoichiometry):
+    return True
+
+def recursively_add_chains_to_structure(structure, chains, stoichiometry=None):
     if len(list(structure.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
         return structure, 0
 
@@ -82,6 +91,9 @@ def recursively_add_chains_to_structure(structure, chains):
     best_rmsd = float('inf')
 
     for chain in chains:
+        if stoichiometry is not None and not is_compatible_with_stoichiometry(structure, chain, stoichiometry):
+            continue
+
         # Copy the two objects to not modify the originals
         structure_atoms = list(structure.copy().get_atoms())
         chain_atoms = list(chain.copy().get_atoms())
