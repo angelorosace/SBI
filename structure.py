@@ -83,7 +83,11 @@ def is_compatible_with_stoichiometry(structure, chain, stoichiometry):
     return True
 
 def recursively_add_chains_to_structure(structure, chains, stoichiometry=None):
-    if len(list(structure.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
+    has_too_many_chains = len(list(structure.get_chains())) >= MAX_CHAINS_IN_STRUCTURE
+    should_stop_recursion = has_too_many_chains if stoichiometry is None else \
+                            not is_compatible_with_stoichiometry(structure, chain, stoichiometry)
+
+    if should_stop_recursion:
         return structure, 0
 
     # Keep track of the structure that was determined as the best by lowest RMSD
@@ -91,14 +95,13 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None):
     best_rmsd = float('inf')
 
     for chain in chains:
-        if stoichiometry is not None and not is_compatible_with_stoichiometry(structure, chain, stoichiometry):
-            continue
-
         # Copy the two objects to not modify the originals
         structure_atoms = list(structure.copy().get_atoms())
         chain_atoms = list(chain.copy().get_atoms())
 
         # Ensure that the lists of atoms are of the same length
+
+# We may want to change this, such as below with a sliding window or checking which atoms on different chains
         imposition_length = min(len(structure_atoms), len(chain_atoms))
         fixed_atoms = structure_atoms[:imposition_length]
         moving_atoms = chain_atoms[:imposition_length]
@@ -116,7 +119,7 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None):
             # Update the best structure found so far if the best substructure
             # and current superimposed structure have a lower RMSD
 
-            # ??? Do we need to sum the total rmsd or would superimposing take that into account?
+# ??? Do we need to sum the total rmsd or would superimposing take that into account?
             total_rmsd = rmsd + superimposer.rms
             if total_rmsd < best_rmsd:
                 best_structure = resulting_structure
