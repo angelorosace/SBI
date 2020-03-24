@@ -1,7 +1,8 @@
 from Bio.PDB import Structure, Model, Chain, NeighborSearch, PDBParser, Superimposer
 from Bio import pairwise2
 
-MAX_CHAINS_IN_STRUCTURE = 100
+MAX_CHAINS_IN_STRUCTURE = 20
+MINIMUM_RMSD = 10
 
 def testing():
     structure_id = 'complex0'
@@ -14,22 +15,11 @@ def testing():
     parser = PDBParser()
     pdb_str = parser.get_structure('6mgh', '6gmh.pdb')
 
-    a = None
-    for c in pdb_str.get_chains():
-        if c.id != 'A':
-            model.add(c)
-        else:
-            a = c
+    chains = list(pdb_str.get_chains())
+    model.add(chains[0])
 
-    return structure, a
+    return structure, chains
 
-    # searcher = NeighborSearch(list(structure.get_atoms()))
-
-    # for atom in a.get_atoms():
-    #     clashes = searcher.search(atom.get_coord(), 2, 'A')
-
-    #     if len(clashes):
-    #         print(atom.id, clashes, a.id)
 
 def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms_for_clash=10):
     searcher = NeighborSearch(list(structure.get_atoms()))
@@ -40,40 +30,6 @@ def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms
             return True
 
     return False
-
-# def get_sequence(residues):
-#     residue_mapping = {
-#         "ALA": "A",
-#         "CYS": "C",
-#         "ASP": "D",
-#         "GLU": "E",
-#         "PHE": "F",
-#         "GLY": "G",
-#         "HIS": "H",
-#         "ILE": "I",
-#         "LYS": "K",
-#         "LEU": "L",
-#         "MET": "M",
-#         "ASN": "N",
-#         "PRO": "P",
-#         "GLN": "Q",
-#         "ARG": "R",
-#         "SER": "S",
-#         "THR": "T",
-#         "VAL": "V",
-#         "TRP": "W",
-#         "TYR": "Y"
-#     }
-
-#     sequence = ''
-#     for residue in residues:
-#         residue_name = residue.get_resname()
-#         if residue_name in residue_mapping:
-#             sequence += residue_mapping[residue_name]
-
-#     return sequence
-
-
 
 
 # The structure and chain are compatible if adding this chain id onto the structure
@@ -119,9 +75,14 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None, r
         superimposer.apply(moving_atoms)
 
         # Continue building the structure with the added chain if it does not clash
-        if not has_clashes_with_structure(structure, moving_atoms):
+        if superimposer.rms < MINIMUM_RMSD and not has_clashes_with_structure(structure, moving_atoms):
             structure_copy = structure.copy()
-            structure_copy.add(chain)
+
+            # Add the chain to the model with a new chain id of all chain ids in the model
+            model = list(structure_copy.get_models())[0]
+            chain.id = ''.join(map(lambda chain: chain.id, list(model.get_chains()))) + chain.id
+            model.add(chain)
+
             resulting_structure, resulting_rmsd = recursively_add_chains_to_structure(structure_copy, chains, stoichiometry, superimposer.rms)
 
             # Update the best structure found so far if the best substructure
@@ -133,42 +94,3 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None, r
     # Return the best structure and RMSD if one is found. If all chains were
     # incompatible or had clashes, return the last seen structure
     return (best_structure, best_rmsd) if best_structure else (structure, rmsd)
-
-
-
-
-        # best_rmsd = float('inf')
-        # best_superimposition = None
-        # best_superimposed_moving_atoms = None
-
-        # window_length = len(chain_atoms)
-        # sliding_window_atoms = structure_atoms
-        # static_atoms = chain_atoms
-        # sliding_window_is_structure = True
-        # if len(chain_atoms) > len(structure_atoms):
-        #     window_length = len(structure_atoms)
-        #     sliding_window_atoms = chain_atoms
-        #     static_atoms = structure_atoms
-        #     sliding_window_is_structure = False
-
-        # number_of_windows = len(sliding_window_atoms) - len(static_atoms) + 1
-
-        # for start_index in range(number_of_windows):
-        #     atoms_in_window = sliding_window_atoms[start_index : start_index + window_length]
-
-        #     superimposer = Superimposer()
-
-        #     fixed_atoms, moving_atoms = (atoms_in_window, static_atoms) \
-        #                                 if sliding_window_is_structure else (static_atoms, atoms_in_window)
-        #     superimposer.set_atoms(fixed_atoms, moving_atoms)
-
-        #     if start_index % 1000 == 0:
-        #         print(start_index / len(sliding_window_atoms))
-
-        #     if superimposer.rms < best_rmsd:
-        #         best_rmsd = superimposer.rms
-        #         best_superimposition = superimposer
-        #         best_superimposed_moving_atoms = moving_atoms
-
-        # print('applying')
-        # best_superimposition.apply(best_superimposed_moving_atoms)
