@@ -6,6 +6,7 @@ class InputParser:
     parser = PDBParser(QUIET=1)
     atom_dict = {}
     seq_dict = {}
+    chain_dict = {}
     dna_bases = ["DC", "DG", "DA", "DT"]
     dna_map = {
         "DC": "D",
@@ -38,14 +39,14 @@ class InputParser:
     }
 
     def __init__(self, interaction_list):
-        self.populate_atom_dict(self.generate_structures(interaction_list))
+        self.populate_dicts(self.generate_structures(interaction_list))
         self.populate_seq_dict()
 
     def generate_structures(self, lst):
         allpdbs = [self.parser.get_structure(filename, filename) for filename in lst]
         return allpdbs
 
-    def populate_atom_dict(self, lst):
+    def populate_dicts(self, lst):
         for pdb in lst:
             for chain in pdb.get_chains():
                 is_dna = True
@@ -60,18 +61,22 @@ class InputParser:
                         is_rna = False
                     atoms.append(atom)
                 if is_dna:
-                    self.populate_sub_atom_dict("DNA", chain_id, atoms)
+                    self.populate_sub_dict("DNA", self.atom_dict, chain_id, atoms)
+                    self.populate_sub_dict("DNA", self.chain_dict, chain_id, chain)
                 elif is_rna:
-                    self.populate_sub_atom_dict("RNA", chain_id, atoms)
+                    self.populate_sub_dict("RNA", self.atom_dict, chain_id, atoms)
+                    self.populate_sub_dict("RNA", self.chain_dict, chain_id, chain)
                 elif chain_id not in self.atom_dict.keys():
+                    self.chain_dict[chain_id] = chain
                     self.atom_dict[chain_id] = atoms
 
-    def populate_sub_atom_dict(self, seq_type, chain_id, atoms):
-        if seq_type not in self.atom_dict:
-            self.atom_dict[seq_type] = {}
-            self.atom_dict[seq_type][chain_id] = atoms
-        elif chain_id not in self.atom_dict[seq_type].keys():
-            self.atom_dict[seq_type][chain_id] = atoms
+    @staticmethod
+    def populate_sub_dict(seq_type, dictionary, chain_id, elem):
+        if seq_type not in dictionary:
+            dictionary[seq_type] = {}
+            dictionary[seq_type][chain_id] = elem
+        elif chain_id not in dictionary[seq_type].keys():
+            dictionary[seq_type][chain_id] = elem
 
     def populate_seq_dict(self):
         for chain in self.atom_dict:
@@ -116,4 +121,3 @@ class InputParser:
                         seq += map_res
                         tmp = res_num
         return seq
-
