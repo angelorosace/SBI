@@ -1,10 +1,19 @@
 from Bio.PDB import *
 
+
 class InputParser:
 
     parser = PDBParser(QUIET=1)
     atom_dict = {}
     seq_dict = {}
+    dna_bases = ["DC", "DG", "DA", "DT"]
+    dna_map = {
+        "DC": "D",
+        "DG": "G",
+        "DA": "A",
+        "DT": "T"
+    }
+    rna_bases = ["G", "U", "C", "A"]
     residue_map = {
         "ALA": "A",
         "CYS": "C",
@@ -39,27 +48,72 @@ class InputParser:
     def populate_atom_dict(self, lst):
         for pdb in lst:
             for chain in pdb.get_chains():
+                is_dna = True
+                is_rna = True
                 chain_id = chain.get_id()
                 atoms = []
                 for atom in chain.get_atoms():
+                    res_name = atom.get_parent().get_resname().lstrip()
+                    if res_name not in self.dna_bases:
+                        is_dna = False
+                    if res_name not in self.rna_bases:
+                        is_rna = False
                     atoms.append(atom)
-                if chain_id not in self.atom_dict.keys():
+                if is_dna:
+                    self.populate_sub_atom_dict("DNA", chain_id, atoms)
+                elif is_rna:
+                    self.populate_sub_atom_dict("RNA", chain_id, atoms)
+                elif chain_id not in self.atom_dict.keys():
                     self.atom_dict[chain_id] = atoms
+
+    def populate_sub_atom_dict(self, seq_type, chain_id, atoms):
+        if seq_type not in self.atom_dict:
+            self.atom_dict[seq_type] = {}
+            self.atom_dict[seq_type][chain_id] = atoms
+        elif chain_id not in self.atom_dict[seq_type].keys():
+            self.atom_dict[seq_type][chain_id] = atoms
 
     def populate_seq_dict(self):
         for chain in self.atom_dict:
-            self.get_seq_data(chain, self.atom_dict[chain])
+            if chain != "DNA" and chain != "RNA":
+                seq = self.get_seq_data(self.atom_dict[chain])
+                self.seq_dict[chain] = seq
+            else:
+                self.populate_sub_seq_dict(chain)
 
-    def get_seq_data(self, chain, atoms):
+    def populate_sub_seq_dict(self, chain):
+        for xna_chain in self.atom_dict[chain]:
+            seq = self.get_seq_data(self.atom_dict[chain][xna_chain], chain)
+            if chain not in self.seq_dict:
+                self.seq_dict[chain] = {}
+                self.seq_dict[chain][xna_chain] = seq
+            else:
+                self.seq_dict[chain][xna_chain] = seq
+
+    def get_seq_data(self, atoms, mapping=None):
         seq = ""
+        tmp = -1
+        map = self.residue_map
+        if mapping:
+            if mapping == "DNA":
+                map = self.dna_map
+            else:
+                map = self.rna_bases
         for atom in atoms:
-            res = atom.get_parent().get_resname()
-            map_res = self.residue_map[res]
-            if res in self.residue_map.keys():
+            res = atom.get_parent()
+            res_name = res.get_resname().lstrip()
+            if type(map) == dict:
+                map_res = map[res_name]
+            else:
+                map_res = res_name
+            res_num = res.get_id()[1]
+            if res_name in map:
                 if seq == "":
                     seq += map_res
+                    tmp = res_num
                 else:
-                    if not seq[-1] == map_res:
+                    if tmp != res_num:
                         seq += map_res
-        self.seq_dict[chain] = seq
+                        tmp = res_num
+        return seq
 
