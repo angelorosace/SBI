@@ -1,5 +1,4 @@
-from Bio.PDB import Structure, Model, Chain, NeighborSearch, PDBParser, Superimposer
-from Bio import pairwise2
+from Bio.PDB import Structure, Model, NeighborSearch, PDBParser, Superimposer
 
 MAX_CHAINS_IN_STRUCTURE = 20
 MINIMUM_RMSD = 10
