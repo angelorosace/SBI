@@ -20,12 +20,17 @@ def testing():
     return structure, chains
 
 
-def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms_for_clash=10):
-    searcher = NeighborSearch(list(structure.get_atoms()))
+# Checks distance between all alpha carbons in the structure and chain atoms for
+# any clashes (where the two atoms are within a certain distance).
+def has_clashes_with_structure(structure, atoms, clash_distance=2):
+    is_alpha_carbon = lambda atom: atom.get_name() == 'CA'
+    structure_alpha_carbon_atoms = list(filter(is_alpha_carbon, structure.get_atoms()))
+    chain_alpha_carbon_atoms = list(filter(is_alpha_carbon, atoms))
 
-    for atom in atoms:
+    searcher = NeighborSearch(structure_alpha_carbon_atoms)
+    for atom in chain_alpha_carbon_atoms:
         clashes = searcher.search(atom.get_coord(), clash_distance, 'A')
-        if len(clashes) >= minimum_atoms_for_clash:
+        if len(clashes) > 0:
             return True
 
     return False
