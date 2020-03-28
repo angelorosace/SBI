@@ -107,17 +107,16 @@ class InputParser:
         for atom in atoms:
             res = atom.get_parent()
             res_name = res.get_resname().lstrip()
-            if type(map) == dict:
+            if type(map) == dict and res_name in map:
                 map_res = map[res_name]
             else:
                 map_res = res_name
             res_num = res.get_id()[1]
-            if res_name in map:
-                if seq == "":
+            if seq == "":
+                seq += map_res
+                tmp = res_num
+            else:
+                if tmp != res_num:
                     seq += map_res
                     tmp = res_num
-                else:
-                    if tmp != res_num:
-                        seq += map_res
-                        tmp = res_num
         return seq

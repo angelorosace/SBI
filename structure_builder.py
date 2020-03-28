@@ -1,24 +1,43 @@
-from Bio.PDB import Structure, Model, NeighborSearch, PDBParser, Superimposer
+from Bio.PDB import Structure, Model, NeighborSearch, PDBParser, Superimposer, PDBIO
 
 MAX_CHAINS_IN_STRUCTURE = 20
 MINIMUM_RMSD = 10
 
-def testing():
+
+#def testing():
+#    structure_id = 'complex0'
+#    model_id = 'model0'
+
+#    structure = Structure.Structure(structure_id)
+#    model = Model.Model(model_id)
+#    structure.add(model)
+
+#    parser = PDBParser(QUIET=1)
+#    pdb_str = parser.get_structure('6mgh', '6gmh.pdb')
+
+#    chains = list(pdb_str.get_chains())
+#    model.add(chains[0])
+
+#    return structure, chains
+
+
+def build_model(chains):
+    start_structure = get_initial_structure(chains[0])
+    complex_structure = recursively_add_chains_to_structure(start_structure, chains)[0]
+    io = PDBIO()
+    io.set_structure(complex_structure)
+    io.save('output_complex.pdb')
+    print("pdb written")
+
+
+def get_initial_structure(chain):
     structure_id = 'complex0'
     model_id = 'model0'
-
     structure = Structure.Structure(structure_id)
     model = Model.Model(model_id)
+    model.add(chain)
     structure.add(model)
-
-    parser = PDBParser()
-    pdb_str = parser.get_structure('6mgh', '6gmh.pdb')
-
-    chains = list(pdb_str.get_chains())
-    model.add(chains[0])
-
-    return structure, chains
-
+    return structure
 
 def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms_for_clash=10):
     searcher = NeighborSearch(list(structure.get_atoms()))
@@ -81,6 +100,7 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None, r
             model = list(structure_copy.get_models())[0]
             chain.id = ''.join(map(lambda chain: chain.id, list(model.get_chains()))) + chain.id
             model.add(chain)
+            structure_copy.add(model)
 
             resulting_structure, resulting_rmsd = recursively_add_chains_to_structure(structure_copy, chains, stoichiometry, superimposer.rms)
 
@@ -93,3 +113,4 @@ def recursively_add_chains_to_structure(structure, chains, stoichiometry=None, r
     # Return the best structure and RMSD if one is found. If all chains were
     # incompatible or had clashes, return the last seen structure
     return (best_structure, best_rmsd) if best_structure else (structure, rmsd)
+
