@@ -4,6 +4,7 @@ from Bio.PDB import *
 class InputParser:
 
     parser = PDBParser(QUIET=1)
+    struct_dict = {}
     atom_dict = {}
     seq_dict = {}
     chain_dict = {}
@@ -44,6 +45,8 @@ class InputParser:
 
     def generate_structures(self, lst):
         allpdbs = [self.parser.get_structure(filename, filename) for filename in lst]
+        for pdb in allpdbs:
+            self.struct_dict[pdb.get_id()] = pdb
         return allpdbs
 
     def populate_dicts(self, lst):
