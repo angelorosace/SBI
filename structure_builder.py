@@ -1,7 +1,6 @@
 from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
-
-MAX_CHAINS_IN_STRUCTURE = 10
+from printer import prnt
 
 # Recursively check all possible structures given the interacting chains that are
 # compatible with the stoichiometry and do not have clashes after superimposing.
