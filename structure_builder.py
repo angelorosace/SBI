@@ -14,18 +14,68 @@ def testing():
 
     parser = PDBParser()
 
-    ac = parser.get_structure('AC', 'AC.pdb')
+    #####################################################################
+
+    # IAIN
+
+    #ac = parser.get_structure('AC', 'AC.pdb')
+    #bc = parser.get_structure('BC', 'BC.pdb')
+    #bd = parser.get_structure('BD', 'BD.pdb')
+
+    #interactions = {
+    #    'A': {ac},
+    #    'B': {bc, bd},
+    #    'C': {ac, bc},
+    #    'D': {bd}
+    #}
+
+    #return ac, interactions
+    ######################################################################
+
+    # ANGELO
+
+    ab = parser.get_structure('AB', 'AB.pdb')
+    ad = parser.get_structure('AD', 'AD.pdb')
     bc = parser.get_structure('BC', 'BC.pdb')
-    bd = parser.get_structure('BD', 'BD.pdb')
+    bg = parser.get_structure('BG', 'BG.pdb')
+    cf = parser.get_structure('CF', 'CF.pdb')
+    dg = parser.get_structure('DG', 'DG.pdb')
+    eh = parser.get_structure('EH', 'EH.pdb')
+    fg = parser.get_structure('FG', 'FG.pdb')
+    fh = parser.get_structure('FH', 'FH.pdb')
+    gh = parser.get_structure('GH', 'GH.pdb')
+    ij = parser.get_structure('IJ', 'IJ.pdb')
+    il = parser.get_structure('IL', 'IL.pdb')
+    jk = parser.get_structure('JK', 'JK.pdb')
+    jo = parser.get_structure('JO', 'JO.pdb')
+    kn = parser.get_structure('KN', 'KN.pdb')
+    lo = parser.get_structure('LO', 'LO.pdb')
+    mp = parser.get_structure('MP', 'MP.pdb')
+    no = parser.get_structure('NO', 'NO.pdb')
+    np = parser.get_structure('NP', 'NP.pdb')
+    op = parser.get_structure('OP', 'OP.pdb')
 
     interactions = {
-        'A': {ac},
-        'B': {bc, bd},
-        'C': {ac, bc},
-        'D': {bd}
+        'A': {ab, ad},
+        'B': {ab, bc, bg},
+        'C': {bc, cf},
+        'D': {ad, dg},
+        'E': {eh},
+        'F': {fg, cf, fh},
+        'G': {dg, fg, gh, bg},
+        'H': {eh, fh, gh},
+        'I': {ij, il},
+        'J': {ij, jk, jo},
+        'K': {jk, kn},
+        'L': {lo, il},
+        'M': {mp},
+        'N': {kn, no, np},
+        'O': {jo, lo, no, op},
+        'P': {mp, np, op},
+
     }
 
-    return ac, interactions
+    return ab, interactions
 
     # pdb_str = parser.get_structure('6gmh', '6gmh.pdb')
 
