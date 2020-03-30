@@ -4,9 +4,11 @@ from Bio.PDB import *
 class InputParser:
 
     parser = PDBParser(QUIET=1)
-    atom_dict = {}
-    seq_dict = {}
-    chain_dict = {}
+    structure_dict = {}
+    interactions = {}
+    #atom_dict = {}
+    #seq_dict = {}
+    #chain_dict = {}
     dna_bases = ["DC", "DG", "DA", "DT"]
     dna_map = {
         "DC": "D",
@@ -39,12 +41,30 @@ class InputParser:
     }
 
     def __init__(self, interaction_list):
-        self.populate_dicts(self.generate_structures(interaction_list))
-        self.populate_seq_dict()
+        #self.populate_dicts(self.generate_structures(interaction_list))
+        self.generate_structures(interaction_list)
+        #self.populate_seq_dict()
+        self.populate_interactions()
 
     def generate_structures(self, lst):
         allpdbs = [self.parser.get_structure(filename, filename) for filename in lst]
+        for pdb in allpdbs:
+            self.structure_dict[pdb.get_id()] = pdb
         return allpdbs
+
+    def populate_interactions(self):
+        for file_name, interaction_structure in self.structure_dict.items():
+            interaction_ids = [chain.get_id() for chain in interaction_structure.get_chains()]
+            interaction_str = ''.join(interaction_ids)
+            self.add_interaction(interaction_str, interaction_ids[0])
+            self.add_interaction(interaction_str, interaction_ids[1])
+
+    def add_interaction(self, interaction_str, interaction_id):
+        if interaction_id not in self.interactions:
+            self.interactions[interaction_id] = [interaction_str]
+        else:
+            if interaction_str not in self.interactions[interaction_id]:
+                self.interactions[interaction_id].append(interaction_str)
 
     def populate_dicts(self, lst):
         for pdb in lst:
@@ -107,17 +127,16 @@ class InputParser:
         for atom in atoms:
             res = atom.get_parent()
             res_name = res.get_resname().lstrip()
-            if type(map) == dict:
+            if type(map) == dict and res_name in map:
                 map_res = map[res_name]
             else:
                 map_res = res_name
             res_num = res.get_id()[1]
-            if res_name in map:
-                if seq == "":
+            if seq == "":
+                seq += map_res
+                tmp = res_num
+            else:
+                if tmp != res_num:
                     seq += map_res
                     tmp = res_num
-                else:
-                    if tmp != res_num:
-                        seq += map_res
-                        tmp = res_num
         return seq
