@@ -6,6 +6,7 @@ def parse_arguments():
     parser.add_argument('--input_directory', action='store', default=None, dest='input_directory', help='Directory of chain interactions')
     parser.add_argument('--input_pdb', action='store', default=None, dest='input_pdb', help='Location of PDB to test')
     parser.add_argument('--output_directory', action='store', default=None, dest='output_directory', help='Directory location to save output files')
+    parser.add_argument('--verbose', action='store_true', default=False, dest='verbose', help='The program should print messages during execution')
     args = parser.parse_args()
 
     if args.input_pdb is None and args.input_directory is None:
@@ -18,7 +19,8 @@ def parse_arguments():
         raise Exception('Output directory is required')
 
     inputs = {
-        'output_directory': args.output_directory
+        'output_directory': args.output_directory,
+        'verbose': args.verbose
     }
 
     if args.input_pdb is not None:

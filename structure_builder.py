@@ -1,11 +1,15 @@
 from Bio.PDB import Structure, Model, NeighborSearch, PDBParser, Superimposer
 
+from printer import prnt
+
 MAX_CHAINS_IN_STRUCTURE = 20
 MINIMUM_RMSD = 10
 
 def testing():
     structure_id = 'complex0'
     model_id = 'model0'
+
+    prnt('Starting testing', 'here', 'hello')
 
     structure = Structure.Structure(structure_id)
     model = Model.Model(model_id)
