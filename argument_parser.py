@@ -1,5 +1,6 @@
 import argparse
 import os
+import csv
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='SBI Complex Builder')
@@ -7,6 +8,8 @@ def parse_arguments():
     parser.add_argument('--input_pdb', action='store', default=None, dest='input_pdb', help='Location of PDB to test')
     parser.add_argument('--output_directory', action='store', default=None, dest='output_directory', help='Directory location to save output files')
     parser.add_argument('--verbose', action='store_true', default=False, dest='verbose', help='The program should print messages during execution')
+    parser.add_argument('--stoichiometry', action='store', default=None, dest='stoichiometry', help='Location of TSV file used as stoichiometry of the complex')
+    parser.add_argument('--chain-limit', action='store', default=10, dest='chain_limit', help='Maximum number of chains in the final complex')
     args = parser.parse_args()
 
     if args.input_pdb is None and args.input_directory is None:
@@ -20,8 +23,28 @@ def parse_arguments():
 
     inputs = {
         'output_directory': args.output_directory,
-        'verbose': args.verbose
+        'verbose': args.verbose,
+        'stoichiometry': None,
+        'chain_limit': int(args.chain_limit)
     }
+
+    if args.stoichiometry is not None:
+        if not os.path.isfile(args.stoichiometry):
+            raise Exception('%s does not exist' % args.stoichiometry)
+
+        inputs['stoichiometry'] = {}
+        with open(args.stoichiometry, 'r') as tsv_file:
+            reader = csv.reader(tsv_file)
+            for line in reader:
+                split_line = line[0].split('\t')
+                if len(split_line) != 2:
+                    raise Exception('Stoichiometry file is incorrectly formatted. Each line must be the chain id followed by the count delimited by a tab')
+
+                chain_id = split_line[0]
+                chain_count = int(split_line[1])
+                inputs['stoichiometry'][chain_id] = chain_count
+
+        inputs['chain_limit'] = sum(inputs['stoichiometry'].values())
 
     if args.input_pdb is not None:
         if not os.path.isfile(args.input_pdb):
