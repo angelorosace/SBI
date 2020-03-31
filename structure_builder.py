@@ -2,15 +2,13 @@ from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
 from printer import prnt
 
-MAX_CHAINS_IN_STRUCTURE = 10
-
 # Recursively check all possible structures given the interacting chains that are
 # compatible with the stoichiometry and do not have clashes after superimposing.
-def recursively_add_chains_to_structure(model, interactions, stoichiometry=None, rmsd=0):
+def recursively_add_chains_to_structure(model, interactions, max_chains, stoichiometry=None, rmsd=0):
     prnt('Entering recursion with model of %d chains, %d interaction chains' % (len(list(model.get_chains())), len(interactions.keys())))
 
-    if stoichiometry is None and len(list(model.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
-        prnt('Too many chains in the model (>=%d)' % MAX_CHAINS_IN_STRUCTURE)
+    if len(list(model.get_chains())) >= max_chains:
+        prnt('Too many chains in the model (>=%d)' % max_chains)
         return model, rmsd
 
     # Keep track of the model that was determined as the best by lowest RMSD
@@ -42,6 +40,7 @@ def recursively_add_chains_to_structure(model, interactions, stoichiometry=None,
                 resulting_model, resulting_rmsd = recursively_add_chains_to_structure(
                     add_chain_to_model(model, non_matching_chain),
                     interactions,
+                    max_chains,
                     stoichiometry,
                     rmsd
                 )
