@@ -1,6 +1,7 @@
 from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
 from printer import prnt
+from sim_check import chain_similarity
 
 MAX_CHAINS_IN_STRUCTURE = 10
 
@@ -33,27 +34,28 @@ def recursively_add_chains_to_structure(model, interactions, stoichiometry=None,
                 prnt('Chain ID %s is not compatible with stoichiometry' % non_matching_chain.id)
                 continue
 
-            rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
-            prnt('RMSD of %f after superposition' % rmsd)
+            if not chain_similarity(matching_chain, non_matching_chain):
+                rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
+                prnt('RMSD of %f after superposition' % rmsd)
 
-            # As long as the rotated/translated chain does not clash with anything else in the
-            # model, add it and recursively check other chains
-            if not has_clashes_with_structure(model, non_matching_chain.get_atoms()):
-                resulting_model, resulting_rmsd = recursively_add_chains_to_structure(
-                    add_chain_to_model(model, non_matching_chain),
-                    interactions,
-                    stoichiometry,
-                    rmsd
-                )
+                # As long as the rotated/translated chain does not clash with anything else in the
+                # model, add it and recursively check other chains
+                if not has_clashes_with_structure(model, non_matching_chain.get_atoms()):
+                    resulting_model, resulting_rmsd = recursively_add_chains_to_structure(
+                        add_chain_to_model(model, non_matching_chain),
+                        interactions,
+                        stoichiometry,
+                        rmsd
+                    )
 
-                prnt('Resulting RMSD of %f for model with chains'\
-                    % resulting_rmsd, list(map(lambda c: c.id, resulting_model.get_chains())))
+                    prnt('Resulting RMSD of %f for model with chains'\
+                        % resulting_rmsd, list(map(lambda c: c.id, resulting_model.get_chains())))
 
-                # If this model is better than any seen so far, save it
-                if resulting_rmsd < best_rmsd:
-                    prnt('Resulting RMSD is lower than previous best RMSD of %f' % best_rmsd)
-                    best_model = resulting_model
-                    best_rmsd = resulting_rmsd
+                    # If this model is better than any seen so far, save it
+                    if resulting_rmsd < best_rmsd:
+                        prnt('Resulting RMSD is lower than previous best RMSD of %f' % best_rmsd)
+                        best_model = resulting_model
+                        best_rmsd = resulting_rmsd
 
     # Return the best model and RMSD if one is found. If all chains were
     # incompatible or had clashes, return the last seen model
