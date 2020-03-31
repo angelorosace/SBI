@@ -1,6 +1,7 @@
 from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
 
+
 MAX_CHAINS_IN_STRUCTURE = 10
 
 # Recursively check all possible structures given the interacting chains that are
