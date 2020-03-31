@@ -1,13 +1,16 @@
 from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
-
+from printer import prnt
 
 MAX_CHAINS_IN_STRUCTURE = 10
 
 # Recursively check all possible structures given the interacting chains that are
 # compatible with the stoichiometry and do not have clashes after superimposing.
 def recursively_add_chains_to_structure(model, interactions, stoichiometry=None, rmsd=0):
+    prnt('Entering recursion with model of %d chains, %d interaction chains' % (len(list(model.get_chains())), len(interactions.keys())))
+
     if stoichiometry is None and len(list(model.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
+        prnt('Too many chains in the model (>=%d)' % MAX_CHAINS_IN_STRUCTURE)
         return model, rmsd
 
     # Keep track of the model that was determined as the best by lowest RMSD
@@ -16,17 +19,22 @@ def recursively_add_chains_to_structure(model, interactions, stoichiometry=None,
 
     # Check each chain in the model for the best additonal chain, if there is one that doesn't clash
     for chain in [chain.copy() for chain in model.get_chains()]:
+        prnt('Checking chain ID %s' % chain.id)
 
         # Check each interaction structure (from the input files) that the chain is found in
         for structure in [struct.copy() for struct in interactions[chain.id]]:
             matching_chain = list(filter(lambda c: c.id == chain.id, structure.get_chains()))[0]
             non_matching_chain = list(filter(lambda c: c.id != chain.id, structure.get_chains()))[0]
 
+            prnt('Matches chain ID %s with non-matching chain ID %s' % (matching_chain.id, non_matching_chain.id))
+
             # Do not attempt to add the chain if it is not compatible with given stoichiometry
             if stoichiometry and not is_compatible_with_stoichiometry(model, non_matching_chain, stoichiometry):
+                prnt('Chain ID %s is not compatible with stoichiometry' % non_matching_chain.id)
                 continue
 
             rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
+            prnt('RMSD of %f after superposition' % rmsd)
 
             # As long as the rotated/translated chain does not clash with anything else in the
             # model, add it and recursively check other chains
@@ -38,8 +46,12 @@ def recursively_add_chains_to_structure(model, interactions, stoichiometry=None,
                     rmsd
                 )
 
+                prnt('Resulting RMSD of %f for model with chains'\
+                    % resulting_rmsd, list(map(lambda c: c.id, resulting_model.get_chains())))
+
                 # If this model is better than any seen so far, save it
                 if resulting_rmsd < best_rmsd:
+                    prnt('Resulting RMSD is lower than previous best RMSD of %f' % best_rmsd)
                     best_model = resulting_model
                     best_rmsd = resulting_rmsd
 
@@ -64,6 +76,8 @@ def superimpose_chain(chain, matching_chain, non_matching_chain):
     moving_atoms = list(matching_chain.get_atoms())
     fixed_atoms = list(chain.get_atoms())
 
+    prnt('Superimposing %d atoms' % len(moving_atoms))
+
     # After superimposing the matching chains, apply the rotation and translation
     # on the part of the interacting structure that does not match what is on the model
     superimposer = Superimposer()
@@ -79,17 +93,23 @@ def has_clashes_with_structure(structure, atoms, clash_distance=2):
     structure_alpha_carbon_atoms = list(filter(is_alpha_carbon, structure.get_atoms()))
     chain_alpha_carbon_atoms = list(filter(is_alpha_carbon, atoms))
 
+    prnt('Checking alpha carbon clashes (<%f A) between %d atoms in the structure and %d atoms in the chain'\
+        % (clash_distance, len(structure_alpha_carbon_atoms), len(chain_alpha_carbon_atoms)))
+
     searcher = NeighborSearch(structure_alpha_carbon_atoms)
     for atom in chain_alpha_carbon_atoms:
         clashes = searcher.search(atom.get_coord(), clash_distance, 'A')
         if len(clashes) > 0:
+            prnt('Found %d clash(es)' % len(clashes))
             return True
 
+    prnt('No clashes found')
     return False
 
 
 # Returns a copy of the model with the chain added
 def add_chain_to_model(model, chain):
+    prnt('Adding chain ID %s to model' % chain.id)
     model_copy = deepcopy(model)
     model_object = list(model_copy.get_models())[0]
     model_object.add(chain)
