@@ -22,10 +22,10 @@ residue_map = {
     "TRP": "W",
     "TYR": "Y",
     # DNA
-    " DC": "C",
-    " DG": "G",
-    " DA": "A",
-    " DT": "T",
+    "DC": "C",
+    "DG": "G",
+    "DA": "A",
+    "DT": "T",
     # RNA
     "G": "G",
     "U": "U",
@@ -87,7 +87,7 @@ def get_overlapping_atoms(chain1, chain2):
 def get_sequence(chain):
     seq = ''
     for res in chain.get_residues():
-        res_name = res.get_resname()
+        res_name = res.get_resname().lstrip()
         if res_name in residue_map:
             map_res = residue_map[res_name]
             seq += map_res
