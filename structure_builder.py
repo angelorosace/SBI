@@ -1,43 +1,56 @@
-from Bio.PDB import Structure, Model, NeighborSearch, PDBParser, Superimposer
-
-from printer import prnt
-
-MAX_CHAINS_IN_STRUCTURE = 20
-MINIMUM_RMSD = 10
-
-def testing():
-    structure_id = 'complex0'
-    model_id = 'model0'
-
-    prnt('Starting testing', 'here', 'hello')
-
-    structure = Structure.Structure(structure_id)
-    model = Model.Model(model_id)
-    structure.add(model)
-
-    parser = PDBParser()
-    pdb_str = parser.get_structure('6mgh', '6gmh.pdb')
-
-    chains = list(pdb_str.get_chains())
-    model.add(chains[0])
-
-    return structure, chains
+from Bio.PDB import NeighborSearch, Superimposer
+from copy import deepcopy
 
 
-def has_clashes_with_structure(structure, atoms, clash_distance=2, minimum_atoms_for_clash=10):
-    searcher = NeighborSearch(list(structure.get_atoms()))
+MAX_CHAINS_IN_STRUCTURE = 10
 
-    for atom in atoms:
-        clashes = searcher.search(atom.get_coord(), clash_distance, 'A')
-        if len(clashes) >= minimum_atoms_for_clash:
-            return True
+# Recursively check all possible structures given the interacting chains that are
+# compatible with the stoichiometry and do not have clashes after superimposing.
+def recursively_add_chains_to_structure(model, interactions, stoichiometry=None, rmsd=0):
+    if stoichiometry is None and len(list(model.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
+        return model, rmsd
 
-    return False
+    # Keep track of the model that was determined as the best by lowest RMSD
+    best_model = None
+    best_rmsd = float('inf')
+
+    # Check each chain in the model for the best additonal chain, if there is one that doesn't clash
+    for chain in [chain.copy() for chain in model.get_chains()]:
+
+        # Check each interaction structure (from the input files) that the chain is found in
+        for structure in [struct.copy() for struct in interactions[chain.id]]:
+            matching_chain = list(filter(lambda c: c.id == chain.id, structure.get_chains()))[0]
+            non_matching_chain = list(filter(lambda c: c.id != chain.id, structure.get_chains()))[0]
+
+            # Do not attempt to add the chain if it is not compatible with given stoichiometry
+            if stoichiometry and not is_compatible_with_stoichiometry(model, non_matching_chain, stoichiometry):
+                continue
+
+            rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
+
+            # As long as the rotated/translated chain does not clash with anything else in the
+            # model, add it and recursively check other chains
+            if not has_clashes_with_structure(model, non_matching_chain.get_atoms()):
+                resulting_model, resulting_rmsd = recursively_add_chains_to_structure(
+                    add_chain_to_model(model, non_matching_chain),
+                    interactions,
+                    stoichiometry,
+                    rmsd
+                )
+
+                # If this model is better than any seen so far, save it
+                if resulting_rmsd < best_rmsd:
+                    best_model = resulting_model
+                    best_rmsd = resulting_rmsd
+
+    # Return the best model and RMSD if one is found. If all chains were
+    # incompatible or had clashes, return the last seen model
+    return (best_model, best_rmsd) if best_model else (model, rmsd)
 
 
-# The structure and chain are compatible if adding this chain id onto the structure
+# The model and chain are compatible if adding this chain id onto the model
 # is still within the boundaries set in the stoichiometry. If the chain id is not
-# in the stoichiometry, it is considered as not valid to be in the structure.
+# in the stoichiometry, it is considered as not valid to be in the model.
 def is_compatible_with_stoichiometry(structure, chain, stoichiometry):
     chain_id = chain.id
     chains = list(structure.get_chains())
@@ -46,54 +59,38 @@ def is_compatible_with_stoichiometry(structure, chain, stoichiometry):
            current_chain_count + 1 <= stoichiometry[chain_id]
 
 
-# Recursively check all possible structures given the chains that are compatible with
-# the stoichiometry and do not have clashes after superimposing.
-def recursively_add_chains_to_structure(structure, chains, stoichiometry=None, rmsd=0):
-    if stoichiometry is None and len(list(structure.get_chains())) >= MAX_CHAINS_IN_STRUCTURE:
-        return structure, rmsd
+# Superimpose the interacting structure on the chain that matches what is in the model
+def superimpose_chain(chain, matching_chain, non_matching_chain):
+    moving_atoms = list(matching_chain.get_atoms())
+    fixed_atoms = list(chain.get_atoms())
 
-    # Keep track of the structure that was determined as the best by lowest RMSD
-    best_structure = None
-    best_rmsd = float('inf')
+    # After superimposing the matching chains, apply the rotation and translation
+    # on the part of the interacting structure that does not match what is on the model
+    superimposer = Superimposer()
+    superimposer.set_atoms(fixed_atoms, moving_atoms)
+    superimposer.apply(list(non_matching_chain.get_atoms()))
+    return superimposer.rms
 
-    for chain in [chain.copy() for chain in chains]:
-        # Do not attempt to use this chain if it is not compatible with given stoichiometry
-        if stoichiometry and not is_compatible_with_stoichiometry(structure, chain, stoichiometry):
-            continue
 
-        structure_atoms = list(structure.get_atoms())
-        chain_atoms = list(chain.get_atoms())
+# Checks distance between all alpha carbons in the structure and chain atoms for
+# any clashes (where the two atoms are within a certain distance).
+def has_clashes_with_structure(structure, atoms, clash_distance=2):
+    is_alpha_carbon = lambda atom: atom.get_name() == 'CA'
+    structure_alpha_carbon_atoms = list(filter(is_alpha_carbon, structure.get_atoms()))
+    chain_alpha_carbon_atoms = list(filter(is_alpha_carbon, atoms))
 
-        # Ensure that the lists of atoms are of the same length
-        #
-        #       TODO - Figure out a better way to do this
-        #
-        imposition_length = min(len(structure_atoms), len(chain_atoms))
-        fixed_atoms = structure_atoms[:imposition_length]
-        moving_atoms = chain_atoms[:imposition_length]
+    searcher = NeighborSearch(structure_alpha_carbon_atoms)
+    for atom in chain_alpha_carbon_atoms:
+        clashes = searcher.search(atom.get_coord(), clash_distance, 'A')
+        if len(clashes) > 0:
+            return True
 
-        # Superimpose and transform the atoms in the moving_atoms list to the best rotation/translation
-        superimposer = Superimposer()
-        superimposer.set_atoms(fixed_atoms, moving_atoms)
-        superimposer.apply(moving_atoms)
+    return False
 
-        # Continue building the structure with the added chain if it does not clash
-        if superimposer.rms < MINIMUM_RMSD and not has_clashes_with_structure(structure, moving_atoms):
-            structure_copy = structure.copy()
 
-            # Add the chain to the model with a new chain id of all chain ids in the model
-            model = list(structure_copy.get_models())[0]
-            chain.id = ''.join(map(lambda chain: chain.id, list(model.get_chains()))) + chain.id
-            model.add(chain)
-
-            resulting_structure, resulting_rmsd = recursively_add_chains_to_structure(structure_copy, chains, stoichiometry, superimposer.rms)
-
-            # Update the best structure found so far if the best substructure
-            # and current superimposed structure have a lower RMSD
-            if resulting_rmsd < best_rmsd:
-                best_structure = resulting_structure
-                best_rmsd = resulting_rmsd
-
-    # Return the best structure and RMSD if one is found. If all chains were
-    # incompatible or had clashes, return the last seen structure
-    return (best_structure, best_rmsd) if best_structure else (structure, rmsd)
+# Returns a copy of the model with the chain added
+def add_chain_to_model(model, chain):
+    model_copy = deepcopy(model)
+    model_object = list(model_copy.get_models())[0]
+    model_object.add(chain)
+    return model_copy
