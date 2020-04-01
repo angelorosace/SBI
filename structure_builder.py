@@ -42,6 +42,7 @@ def recursively_add_chains_to_structure(model, interactions, max_chains, stoichi
                     resulting_model, resulting_rmsd = recursively_add_chains_to_structure(
                         add_chain_to_model(model, non_matching_chain),
                         interactions,
+                        max_chains,
                         stoichiometry,
                         rmsd
                     )
