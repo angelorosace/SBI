@@ -90,9 +90,12 @@ def superimpose_chain(chain, matching_chain, non_matching_chain):
 # Checks distance between all alpha carbons in the structure and chain atoms for
 # any clashes (where the two atoms are within a certain distance).
 def has_clashes_with_structure(structure, atoms, clash_distance=2):
-    is_alpha_carbon = lambda atom: atom.get_name() == 'CA'
-    structure_alpha_carbon_atoms = list(filter(is_alpha_carbon, structure.get_atoms()))
-    chain_alpha_carbon_atoms = list(filter(is_alpha_carbon, atoms))
+    # is_alpha_carbon = lambda atom: atom.get_name() == 'CA'
+    is_alpha_carbon_or_phosphate = lambda atom: atom.get_name() == 'CA' or atom.get_id() == "P"
+    # structure_alpha_carbon_atoms = list(filter(is_alpha_carbon, structure.get_atoms()))
+    structure_alpha_carbon_atoms = list(filter(is_alpha_carbon_or_phosphate, structure.get_atoms()))
+    # chain_alpha_carbon_atoms = list(filter(is_alpha_carbon, atoms))
+    chain_alpha_carbon_atoms = list(filter(is_alpha_carbon_or_phosphate, atoms))
 
     prnt('Checking alpha carbon clashes (<%f A) between %d atoms in the structure and %d atoms in the chain'\
         % (clash_distance, len(structure_alpha_carbon_atoms), len(chain_alpha_carbon_atoms)))
@@ -115,3 +118,4 @@ def add_chain_to_model(model, chain):
     model_object = list(model_copy.get_models())[0]
     model_object.add(chain)
     return model_copy
+
