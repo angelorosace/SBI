@@ -6,7 +6,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='SBI Complex Builder')
     parser.add_argument('--input_directory', action='store', default=None, dest='input_directory', help='Directory of chain interactions')
     parser.add_argument('--input_pdb', action='store', default=None, dest='input_pdb', help='Location of PDB to test')
-    parser.add_argument('--output_directory', action='store', default=None, dest='output_directory', help='Directory location to save output files')
+    parser.add_argument('--output_file', action='store', default=None, dest='output_file', help='Directory location to save output files')
     parser.add_argument('--verbose', action='store_true', default=False, dest='verbose', help='The program should print messages during execution')
     parser.add_argument('--stoichiometry', action='store', default=None, dest='stoichiometry', help='Location of TSV file used as stoichiometry of the complex')
     parser.add_argument('--chain-limit', action='store', default=10, dest='chain_limit', help='Maximum number of chains in the final complex')
@@ -18,11 +18,11 @@ def parse_arguments():
     if args.input_pdb is not None and args.input_directory is not None:
         raise Exception('Cannot run with both a PDB file and a directory of chain interactions')
 
-    if args.output_directory is None:
-        raise Exception('Output directory is required')
+    if args.output_file is None:
+        raise Exception('Output file is required')
 
     inputs = {
-        'output_directory': args.output_directory,
+        'output_file': args.output_file,
         'verbose': args.verbose,
         'stoichiometry': None,
         'chain_limit': int(args.chain_limit)
@@ -59,8 +59,8 @@ def parse_arguments():
 
         inputs['chain_interactions'] = chain_interaction_files
 
-    if not os.path.isdir(args.output_directory):
-        os.mkdir(args.output_directory)
+    if not os.path.isdir(args.output_file):
+        os.mkdir(args.output_file)
 
     return inputs
 

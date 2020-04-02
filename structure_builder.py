@@ -2,6 +2,7 @@ from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
 from printer import prnt
 from sim_check import chain_similarity
+from datetime import datetime
 
 seen_interactions = []
 
@@ -39,7 +40,6 @@ def recursively_add_chains_to_structure(model, interactions, max_chains, stoichi
                 if interaction not in seen_interactions:
                     seen_interactions.append(interaction)
                     rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
-                    prnt('RMSD of %f after superposition' % rmsd)
 
                     # As long as the rotated/translated chain does not clash with anything else in the
                     # model, add it and recursively check other chains
@@ -52,8 +52,8 @@ def recursively_add_chains_to_structure(model, interactions, max_chains, stoichi
                             rmsd
                         )
 
-                        prnt('Resulting RMSD of %f for model with chains'\
-                            % resulting_rmsd, list(map(lambda c: c.id, resulting_model.get_chains())))
+                        prnt('Resulting RMSD of ', resulting_rmsd,'for model with chains',\
+                             list(map(lambda c: c.id, resulting_model.get_chains())))
 
                         # If this model is better than any seen so far, save it
                         if resulting_rmsd < best_rmsd:
