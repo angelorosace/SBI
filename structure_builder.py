@@ -37,7 +37,6 @@ def recursively_add_chains_to_structure(model, interactions, max_chains, stoichi
             if not chain_similarity(matching_chain, non_matching_chain):
                 interaction = ''.join(sorted([matching_chain.get_id(), non_matching_chain.get_id()]))
                 if interaction not in seen_interactions:
-                    print(matching_chain, non_matching_chain)
                     seen_interactions.append(interaction)
                     rmsd = superimpose_chain(chain, matching_chain, non_matching_chain)
                     prnt('RMSD of %f after superposition' % rmsd)
