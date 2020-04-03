@@ -6,6 +6,7 @@ class InputParser:
     parser = PDBParser(QUIET=1)
     structure_dict = {}
     interactions = {}
+    root = None
 
     def __init__(self, interaction_list):
         self.generate_structures(interaction_list)
@@ -22,9 +23,12 @@ class InputParser:
             interaction_ids = [chain.get_id() for chain in interaction_structure.get_chains()]
             contains = self.contains_dna_or_rna(interaction_structure)
             if contains:
+                self.root = file_name
                 if len(self.structure_dict.items()) == 1:
                     self.add_interaction(interaction_structure, contains)
                     self.add_interaction([], ''.join(list(set(interaction_ids).difference(set(contains)))))
+                else:
+                    self.add_interaction(interaction_structure, contains)
             else:
                 self.add_interaction(interaction_structure, interaction_ids[0])
                 self.add_interaction(interaction_structure, interaction_ids[1])
@@ -43,6 +47,7 @@ class InputParser:
         chains = [chain for chain in structure.get_chains()]
         for chain in chains:
             if self.is_rna_dna(chain):
+
                 return chain.get_id()
         return False
 
@@ -51,3 +56,6 @@ class InputParser:
         rna = {"A", "C", "G", "U"}
         return dna == set(sorted(set([res.get_resname().lstrip() for res in chain.get_residues()]))) or \
             rna == set(sorted(set([res.get_resname().lstrip() for res in chain.get_residues()])))
+
+    def get_root(self):
+        return self.root
