@@ -12,14 +12,22 @@ Biopython == 1.76
 argparse  == 1.4.0
 ```
 
+### Installation
+
+To use this program, you may either clone this Git repo and call `macro_molecular_complex_builder.py` directly or by installing the `dist/macro_molecular_complex_builder-0.0.1.tar.gz` using the following command:
+
+```
+pip install dist/macro_molecular_complex_builder-0.0.1.tar.gz
+```
+
 ### Required Command Line Arguments
 
 ```
 --input_directory
-      ...
+      Location of the directory where the list of interaction PDB files are.
 
---output_directory
-      ...
+--output_file
+      Location of where the output PDB model should be written.
 ```
 
 ### Optional Command Line Arguments
@@ -40,10 +48,10 @@ argparse  == 1.4.0
 
 ### Example
 
-In the directory `/example`, there is a list of interaction PDB files. These interaction files can be run through the program to generate a protein model by running the following command:
+In the directory `/4g83` (among others), there is a list of interaction PDB files. These interaction files can be run through the program to generate a protein model by running the following command:
 
-`python3 macro_molecular_complex_builder.py --input_directory ./example --output_directory ./output --verbose`
+`python -m macro_molecular_complex_builder --input_directory ./4g83 --output_file out.pdb --verbose`
 
 When running with stoichiometry, the following command can be run:
 
-`python3 macro_molecular_complex_builder.py --input_directory ./example --output_directory ./output --stoichiometry ./example/stoichiometry.tsv`
+`python -m macro_molecular_complex_builder --input_directory ./4g83 --output_file out.pdb --stoichiometry ./example/stoichiometry.tsv`
