@@ -2,7 +2,6 @@ from Bio.PDB import NeighborSearch, Superimposer
 from copy import deepcopy
 from printer import prnt
 from sim_check import chain_similarity
-from datetime import datetime
 
 seen_interactions = []
 
