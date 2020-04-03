@@ -1,0 +1,3 @@
+The constructed model replicates just a small part of the original pdb_file. This could be due to the fact that our
+algorithm doesn't detect a clear relationship with the other sub complexes. Although not managing to recreate the whole
+macro complex the algorithm manages to give to the user a good picture of one of its subunits.
