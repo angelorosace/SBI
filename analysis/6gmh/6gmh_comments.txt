@@ -1,0 +1,3 @@
+The constructed and original model are structurally the same. THe only difference we see is that we are missing some small
+atoms. This could be due to the pdb interaction files not holding information for this atoms or due to the fact that our superposition
+method implies the truncation of at least one of the chains involved in the superposition.
