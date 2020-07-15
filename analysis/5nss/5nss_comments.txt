@@ -1,0 +1,4 @@
+The constructed model and the original supercomplex are really close in terms of structure. We can clearly see though
+that a small portion of the original model has not been modelled. This could be due to the algorithm not recognizing the
+interaction between the sub units of the model. This can in turn be due to the parameters set in the algorithm when
+checking for interactions between chains.
