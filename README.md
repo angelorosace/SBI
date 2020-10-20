@@ -2,6 +2,8 @@
 
 ## Tutorial
 
+View "background_tutorial_analysis.pdf" for detailed package instructions. 
+
 ### Software Requirements
 
 The following are required to be installed before running the program:
