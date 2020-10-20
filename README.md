@@ -1,4 +1,4 @@
-# SBI
+# Macro-Complex Modeling of Biomolecules
 
 ## Tutorial
 
